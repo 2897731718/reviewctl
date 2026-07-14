@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.ai-review/
+*.log
+*.tgz
+.DS_Store

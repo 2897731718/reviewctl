@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adversarial Project Review"
+  short_description: "Run evidence-driven multi-agent project reviews"
+  default_prompt: "Use $adversarial-project-review to review the current project and summarize the final report without modifying code."
