@@ -31,6 +31,28 @@ Credential detection supports stored CLI login state and environment-provided
 variables are checked only for non-empty presence: their values are never
 logged or persisted, and validity is not tested until a real agent call runs.
 
+Claude-compatible API gateways must expose their environment variables to the
+`reviewctl` process so its child `claude` process can inherit them:
+
+```bash
+export ANTHROPIC_AUTH_TOKEN="..."
+export ANTHROPIC_BASE_URL="https://gateway.example.com"
+export ANTHROPIC_MODEL="claude-model-name"
+reviewctl doctor
+reviewctl review --scope implementation --base HEAD
+```
+
+The variables can instead be scoped to one invocation. A shell alias that sets
+them only while launching `claude` is not inherited by `reviewctl` and will not
+configure the Claude provider:
+
+```bash
+ANTHROPIC_AUTH_TOKEN="..." \
+ANTHROPIC_BASE_URL="https://gateway.example.com" \
+ANTHROPIC_MODEL="claude-model-name" \
+reviewctl review --scope implementation --base HEAD
+```
+
 Agent processes receive a provider-specific environment allowlist instead of
 the caller's complete environment. Codex review sessions also ignore local
 rules and user configuration, run read-only, and do not pass CLI credentials

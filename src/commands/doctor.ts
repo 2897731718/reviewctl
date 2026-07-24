@@ -62,6 +62,7 @@ export function detectAuthentication(
   const environmentSource = detectEnvironmentCredential(provider, env);
 
   if (provider === "claude") {
+    if (environmentSource) return environmentCredential(environmentSource);
     try {
       const status = JSON.parse(result.stdout ?? "") as {
         loggedIn?: unknown;
@@ -69,9 +70,6 @@ export function detectAuthentication(
         apiKeySource?: unknown;
       };
       const authenticated = status.loggedIn === true;
-      if (authenticated && environmentSource) {
-        return environmentCredential(environmentSource);
-      }
       return {
         authenticated,
         authDetail: authenticated
