@@ -56,8 +56,11 @@ export function runProcess(
         return;
       }
       if (exitCode !== 0) {
+        const stdoutText = Buffer.concat(stdout).toString("utf8");
+        const stderrText = Buffer.concat(stderr).toString("utf8");
+        const detail = processFailureDetail(stdoutText, stderrText);
         finish(new Error(
-          `${command} exited with status ${exitCode}: ${redactSensitiveText(Buffer.concat(stderr).toString("utf8").trim())}`,
+          `${command} exited with status ${exitCode}: ${redactSensitiveText(detail)}`,
         ));
         return;
       }
@@ -86,4 +89,22 @@ export function runProcess(
       else if (result) resolve(result);
     }
   });
+}
+
+function processFailureDetail(stdout: string, stderr: string): string {
+  const stderrDetail = stderr.trim();
+  if (stderrDetail) return stderrDetail;
+  const stdoutDetail = stdout.trim();
+  if (!stdoutDetail) return "no diagnostic output";
+  try {
+    const payload = JSON.parse(stdoutDetail) as Record<string, unknown>;
+    for (const key of ["result", "message", "error"] as const) {
+      const value = payload[key];
+      if (typeof value === "string" && value.trim()) return value.trim();
+      if (typeof value === "object" && value !== null) return JSON.stringify(value);
+    }
+  } catch {
+    // Fall back to bounded plain output below.
+  }
+  return stdoutDetail.slice(0, 4_096);
 }

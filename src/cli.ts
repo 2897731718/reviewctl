@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { createRequire } from "node:module";
+
 import { formatDoctor, runDoctor } from "./commands/doctor.js";
 import { reviewHelp, runReviewCommand } from "./commands/review.js";
 import { runReportCommand } from "./commands/report.js";
@@ -8,7 +10,8 @@ import { runStatusCommand } from "./commands/status.js";
 import { runSetupCommand, setupHelp } from "./commands/setup.js";
 import { runVerifyCommand } from "./commands/verify.js";
 
-const VERSION = "0.1.0";
+const require = createRequire(import.meta.url);
+const VERSION = (require("../package.json") as { version: string }).version;
 
 function help(): string {
   return `reviewctl ${VERSION}

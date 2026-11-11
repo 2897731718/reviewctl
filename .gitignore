@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .ai-review/
+eval/results/
 *.log
 *.tgz
 .DS_Store

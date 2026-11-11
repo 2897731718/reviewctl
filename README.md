@@ -218,7 +218,22 @@ Requires Node.js 20 or newer.
 ```bash
 npm install
 npm test
+npm run eval
 ```
+
+`npm run eval` validates the deterministic quality scorer without model calls.
+To run a real blind case through the current multi-round workflow, explicitly
+confirm the model cost:
+
+```bash
+npm run eval:live -- --confirm-cost --case stale-lock-race
+```
+
+Add `--repeat 3` for stability measurement. Live runs continue after individual case failures and
+save structured results under `eval/results/` unless `--output <path>` is supplied.
+
+See [eval/README.md](eval/README.md) for the seven-case baseline, metric definitions,
+and full-suite command.
 
 Test the publishable package without publishing it:
 

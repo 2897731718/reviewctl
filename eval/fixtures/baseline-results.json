@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "description": "Deterministic scorer fixture; not a claim about live model quality.",
+  "runs": [
+    {
+      "caseId": "null-user-profile",
+      "findings": [{"id":"F1","title":"缺少用户空值检查","severity":"P2","category":"correctness","impact":"user 不存在时访问 user.name 会抛出异常","recommendation":"增加空值分支","verification":"增加不存在用户测试","evidence":[{"path":"src/profile.js","observation":"find 可能返回 undefined"}]}],
+      "verdicts": [{"findingId":"F1","status":"CONFIRMED"}]
+    },
+    {
+      "caseId": "path-traversal-download",
+      "findings": [{"id":"F1","title":"下载接口存在目录穿越","severity":"P2","category":"security","impact":"攻击者可读取下载目录外文件","recommendation":"解析并校验路径边界","verification":"使用 .. 构造测试","evidence":[{"path":"src/download.js","observation":"requestedName 未校验"}]}],
+      "verdicts": [{"findingId":"F1","status":"CONFIRMED"}]
+    },
+    {
+      "caseId": "stale-lock-race",
+      "findings": [{"id":"F1","title":"过期锁替换存在 TOCTOU 竞态","severity":"P1","category":"concurrency","impact":"延迟进程可能 unlink 另一个进程的新锁","recommendation":"校验锁所有权","verification":"并发复现","evidence":[{"path":"src/lock.js","observation":"检查与 unlink 分离"}]}],
+      "verdicts": [{"findingId":"F1","status":"CONFIRMED"}]
+    },
+    {
+      "caseId": "missing-finally-cleanup",
+      "findings": [{"id":"F1","title":"异常路径未释放资源","severity":"P2","category":"lifecycle","impact":"task 异常时资源泄漏","recommendation":"使用 finally close","verification":"增加异常测试","evidence":[{"path":"src/job.js","observation":"close 仅在成功路径执行"}]}],
+      "verdicts": [{"findingId":"F1","status":"CONFIRMED"}]
+    },
+    {"caseId":"clean-safe-lookup","findings":[],"verdicts":[]},
+    {"caseId":"clean-finally-cleanup","findings":[],"verdicts":[]},
+    {
+      "caseId": "historical-claude-env-auth-precedence",
+      "findings": [{"id":"F1","title":"环境凭据被 logged-out 状态忽略","severity":"P1","category":"authentication","impact":"配置 ANTHROPIC_AUTH_TOKEN 的 Claude provider 仍被判断为未认证","recommendation":"环境凭据存在时独立返回 configured","verification":"增加 loggedIn false 与环境 token 并存的测试","evidence":[{"path":"src/doctor.js","observation":"仅 authenticated 为 true 时采用 ANTHROPIC_AUTH_TOKEN"}]}],
+      "verdicts": [{"findingId":"F1","status":"CONFIRMED","severity":"P1"}]
+    }
+  ]
+}

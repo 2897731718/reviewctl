@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "1.0",
+  "cases": [
+    {
+      "id": "null-user-profile",
+      "kind": "synthetic",
+      "description": "可选用户不存在时直接解引用",
+      "expected": [{
+        "id": "missing-user-null-check",
+        "severity": "P2",
+        "aliases": ["user.name", "undefined", "null check", "空值", "不存在", "解引用"]
+      }],
+      "files": {
+        "src/profile.js": "export function displayName(users, id) {\n  const user = users.find((item) => item.id === id);\n  return user.name.trim();\n}\n",
+        "test/profile.test.js": "import assert from 'node:assert/strict';\nimport test from 'node:test';\nimport { displayName } from '../src/profile.js';\ntest('existing user', () => assert.equal(displayName([{ id: 1, name: ' Ada ' }], 1), 'Ada'));\n"
+      }
+    },
+    {
+      "id": "path-traversal-download",
+      "kind": "synthetic",
+      "description": "未校验的文件名逃逸下载目录",
+      "expected": [{
+        "id": "path-traversal",
+        "severity": "P2",
+        "aliases": ["path traversal", "目录穿越", "路径穿越", "..", "resolve", "下载目录"]
+      }],
+      "files": {
+        "src/download.js": "import { readFile } from 'node:fs/promises';\nimport { join } from 'node:path';\nexport function download(root, requestedName) {\n  return readFile(join(root, requestedName));\n}\n"
+      }
+    },
+    {
+      "id": "stale-lock-race",
+      "kind": "synthetic",
+      "description": "基于过期判断无条件删除可能删掉新锁",
+      "expected": [{
+        "id": "stale-lock-toctou",
+        "severity": "P1",
+        "aliases": ["TOCTOU", "竞态", "race", "stale lock", "新锁", "unlink"]
+      }],
+      "files": {
+        "src/lock.js": "import { readFile, unlink, writeFile } from 'node:fs/promises';\nexport async function acquire(path, isAlive) {\n  try {\n    await writeFile(path, String(process.pid), { flag: 'wx' });\n  } catch {\n    const owner = Number(await readFile(path, 'utf8'));\n    if (isAlive(owner)) throw new Error('locked');\n    await unlink(path);\n    await writeFile(path, String(process.pid), { flag: 'wx' });\n  }\n}\n"
+      }
+    },
+    {
+      "id": "missing-finally-cleanup",
+      "kind": "synthetic",
+      "description": "任务失败后资源不会释放",
+      "expected": [{
+        "id": "missing-finally",
+        "severity": "P2",
+        "aliases": ["finally", "cleanup", "资源泄漏", "释放", "close", "异常"]
+      }],
+      "files": {
+        "src/job.js": "export async function runJob(pool, task) {\n  const resource = await pool.acquire();\n  const result = await task(resource);\n  await resource.close();\n  return result;\n}\n"
+      }
+    },
+    {
+      "id": "clean-safe-lookup",
+      "kind": "synthetic",
+      "description": "正确处理用户不存在的干净对照",
+      "expected": [],
+      "files": {
+        "src/profile.js": "export function displayName(users, id) {\n  const user = users.find((item) => item.id === id);\n  return user?.name.trim() ?? null;\n}\n",
+        "test/profile.test.js": "import assert from 'node:assert/strict';\nimport test from 'node:test';\nimport { displayName } from '../src/profile.js';\ntest('missing user', () => assert.equal(displayName([], 1), null));\n"
+      }
+    },
+    {
+      "id": "clean-finally-cleanup",
+      "kind": "synthetic",
+      "description": "通过 finally 释放资源的干净对照",
+      "expected": [],
+      "files": {
+        "src/job.js": "export async function runJob(pool, task) {\n  const resource = await pool.acquire();\n  let taskFailed = false;\n  let taskError;\n  try {\n    return await task(resource);\n  } catch (error) {\n    taskFailed = true;\n    taskError = error;\n    throw error;\n  } finally {\n    try {\n      await resource.close();\n    } catch (cleanupError) {\n      if (taskFailed) {\n        throw new AggregateError([taskError, cleanupError], 'task and cleanup both failed');\n      }\n      throw cleanupError;\n    }\n  }\n}\n"
+      }
+    },
+    {
+      "id": "historical-claude-env-auth-precedence",
+      "kind": "historical-regression",
+      "description": "Claude 环境凭据被 CLI logged-out 状态错误覆盖",
+      "provenance": {
+        "repository": "reviewctl",
+        "fixedBy": "f524fa338fa65fc72bb6c40c6854e5a802956635",
+        "sourcePath": "src/commands/doctor.ts"
+      },
+      "expected": [{
+        "id": "claude-environment-credential-ignored",
+        "severity": "P1",
+        "aliases": ["ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "环境凭据", "environment credential", "loggedIn", "logged out", "认证"]
+      }],
+      "files": {
+        "README.md": "# Authentication contract\n\nClaude authentication supports stored CLI login state and environment-provided `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`. A non-empty environment credential must make the provider available independently of `claude auth status`; its validity is checked only during a real agent call.\n",
+        "src/doctor.js": "export function detectClaudeAuthentication(env, statusOutput) {\n  const environmentSource = env.ANTHROPIC_API_KEY\n    ? 'ANTHROPIC_API_KEY'\n    : env.ANTHROPIC_AUTH_TOKEN\n      ? 'ANTHROPIC_AUTH_TOKEN'\n      : undefined;\n\n  try {\n    const status = JSON.parse(statusOutput);\n    const authenticated = status.loggedIn === true;\n    if (authenticated && environmentSource) {\n      return { authenticated: true, credentialSource: environmentSource };\n    }\n    return {\n      authenticated,\n      authDetail: authenticated ? `authenticated (${status.authMethod ?? 'unknown'})` : 'run `claude auth login`',\n    };\n  } catch {\n    return environmentSource\n      ? { authenticated: true, credentialSource: environmentSource }\n      : { authenticated: false, authDetail: 'unable to read Claude credential status' };\n  }\n}\n",
+        "test/doctor.test.js": "import assert from 'node:assert/strict';\nimport test from 'node:test';\nimport { detectClaudeAuthentication } from '../src/doctor.js';\n\ntest('uses environment credential when status output is invalid', () => {\n  const result = detectClaudeAuthentication({ ANTHROPIC_AUTH_TOKEN: 'secret' }, 'not-json');\n  assert.equal(result.authenticated, true);\n});\n"
+      }
+    }
+  ]
+}

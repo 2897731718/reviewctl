@@ -32,6 +32,17 @@ test("force-kills an output-limited process and waits for close", async () => {
   });
 });
 
+test("uses structured stdout when a failed process has no stderr", async () => {
+  await assert.rejects(runProcess(process.execPath, ["-e", `
+    process.stdout.write(JSON.stringify({ result: "API gateway rejected the model" }));
+    process.exit(1);
+  `], {
+    cwd: process.cwd(),
+    stdin: "",
+    timeoutMs: 5_000,
+  }), /API gateway rejected the model/u);
+});
+
 async function assertTerminatedBeforeRejection({ script, timeoutMs, expectedError }) {
   const directory = await mkdtemp(join(tmpdir(), "reviewctl-process-"));
   const pidFile = join(directory, "pid");

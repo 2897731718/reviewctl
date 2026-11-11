@@ -1,6 +1,6 @@
 {
   "name": "reviewctl",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Evidence-driven adversarial reviews across AI coding agents.",
   "type": "module",
   "bin": {
@@ -15,6 +15,7 @@
   "files": [
     "dist",
     "docs",
+    "eval",
     "skills",
     "README.md",
     "LICENSE"
@@ -22,6 +23,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test test/*.test.js",
+    "eval": "node eval/run.mjs --results eval/fixtures/baseline-results.json",
+    "eval:live": "npm run build && node eval/run.mjs --live",
     "check": "npm test",
     "prepack": "npm run check"
   },
