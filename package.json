@@ -15,7 +15,11 @@
   "files": [
     "dist",
     "docs",
-    "eval",
+    "eval/README.md",
+    "eval/cases.json",
+    "eval/fixtures",
+    "eval/run.mjs",
+    "eval/scoring.mjs",
     "skills",
     "README.md",
     "LICENSE"
